@@ -20,7 +20,7 @@ Before using this framework, ensure the following:
 - Python 3.8 or later
 - GPU with CUDA 11.0 or later
 - Required Python libraries installed:
-  ```bash
+```bash
   pip install -r requirements.txt
 ```
  
@@ -29,10 +29,9 @@ Before using this framework, ensure the following:
  
   - Testing Dataset: Located at `./affectnet/test`
 
-
 ---
 
-**Project Structure** 
+## **Project Structure** 
 The directory structure for the project should look like this:
 
 
@@ -53,7 +52,7 @@ The directory structure for the project should look like this:
 
 ---
 
-**Configuration File** The `config.yml` file contains all the parameters for training, fine-tuning, and testing. Below is an example configuration:
+## **Configuration File** The `config.yml` file contains all the parameters for training, fine-tuning, and testing. Below is an example configuration:
 
 ```yaml
 # Dataset and Dataloader configuration
