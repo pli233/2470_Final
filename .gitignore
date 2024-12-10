@@ -1,4 +1,5 @@
 __pycache__/
 affectnet_3750subset/
 affectnet_3750subset_with_landmarks/
+saved_models/
 *.pth
