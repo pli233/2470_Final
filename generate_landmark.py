@@ -64,13 +64,18 @@ if __name__ == "__main__":
     # Load configuration
     config_path = './config.yml'
     config = load_config(config_path)
-
     # Define source and destination folders
     source_folder = config['train_dataset_path']
-    destination_folder = config['landmarks_output_path']  # Fixed to correct key for destination
-
+    destination_folder = config['train_landmarks_dataset_path']  
     # Ensure paths are properly converted to Path objects
     source_folder = Path(source_folder)
     destination_folder = Path(destination_folder)
+    extract_mediapipe_landmarks(source_folder, destination_folder)
 
+    # Define source and destination folders
+    source_folder = config['test_dataset_path']
+    destination_folder = config['test_landmarks_dataset_path'] 
+    # Ensure paths are properly converted to Path objects
+    source_folder = Path(source_folder)
+    destination_folder = Path(destination_folder)
     extract_mediapipe_landmarks(source_folder, destination_folder)

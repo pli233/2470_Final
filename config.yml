@@ -1,22 +1,23 @@
 # Dataset and Dataloader configuration
 save_dir: './saved_models'  # Directory to save the models
-exp_name: simclip_rn18_gray
+exp_name: simclip_rn18_landmark
 train_dataset_path: './affectnet_3750subset/train'  # Path to the dataset
 test_dataset_path: './affectnet_3750subset/test'
-landmarks_output_path: './affectnet_landmark/train'
+train_landmarks_dataset_path: './affectnet_landmark/train'
+test_landmarks_dataset_path: './affectnet_landmark/test'
 
 # Pretrain configuration
-pretrain_batch_size: 64  # Batch size for training
-pretrain_num_workers: 4  # Number of workers for DataLoader
+pretrain_batch_size: 32  # Batch size for training
+pretrain_num_workers: 8  # Number of workers for DataLoader
 pretrain_epochs: 30  # Total number of training epochs
 pretrain_learning_rate: 0.001  # Learning rate for optimizer
 
 # Finetune configuration
-finetune_batch_size: 64  # Batch size for training
-finetune_num_workers: 4  # Number of workers for DataLoader
+finetune_batch_size: 32  # Batch size for training
+finetune_num_workers: 8  # Number of workers for DataLoader
 finetune_epochs: 30  # Total number of training epochs
 finetune_learning_rate: 0.001  # Learning rate for optimizer
 
 # Test configuration
 test_batch_size: 64  # Batch size for training
-test_num_workers: 4  # Number of workers for DataLoader
+test_num_workers: 8  # Number of workers for DataLoader
