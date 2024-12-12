@@ -11,9 +11,19 @@ import torchvision.datasets as datasets
 from simclip_utils import is_photo, make_mosaic
 import albumentations as A
 import torchvision.transforms as transforms
-
+import os
 
 # --- Augmentation Pipelines ---
+def get_basic_transform():
+    basic_transform = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.RandomResizedCrop((224, 224), scale=(0.8, 1.0)),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomRotation(degrees=10),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1, hue=0.05),
+        transforms.ToTensor(),
+    ])
+    return basic_transform
 def get_augmentations():
     """Define augmentation pipelines."""
     # Define augmentation pipelines
@@ -178,7 +188,7 @@ class MultiModalDataset_Gray_Train(Dataset):
         gray_basic = get_rich_transform_gray()(rgb_image_pil)
 
         return rgb_basic, rgb_mosaic_tensor, gray_basic, gray_mosaic_tensor, label
-    
+
 class MultiModalDataset_Gray_Test(Dataset):
     def __init__(self, rgb_root):
         # 使用单个数据集目录
@@ -209,6 +219,111 @@ class MultiModalDataset_Gray_Test(Dataset):
         # 返回RGB图像、灰度图像和标签
         return rgb_image, gray_image, label
 
+
+class MultiModalDataset_Landmark(Dataset):
+    def __init__(self, rgb_root, landmarks_root):
+        self.rgb_dataset = datasets.ImageFolder(root=rgb_root, is_valid_file=is_photo)
+        self.landrmark_dataset = datasets.ImageFolder(root=landmarks_root, is_valid_file=is_photo)
+
+        print("RGB 数据集长度:", len(self.rgb_dataset))
+        print("Landmarks 数据集长度:", len(self.landrmark_dataset))
+        
+        self.synchronize_datasets()
+        
+        self.aug_list = get_augmentations()
+
+    def synchronize_datasets(self):
+        def get_relative_paths(dataset, is_landrmark=False):
+            relative_paths = []
+            for path, _ in dataset.samples:
+                rel_path = os.path.relpath(path, dataset.root)
+                if is_landrmark:
+                    dir_name, file_name = os.path.split(rel_path)
+                    base_name = file_name.replace('_landmarks', '')
+                    rel_path = os.path.join(dir_name, base_name)
+                    rel_path = os.path.splitext(rel_path)[0]  # 去掉扩展名
+                else:
+                    rel_path = os.path.splitext(rel_path)[0]  # 去掉扩展名
+                relative_paths.append(rel_path)
+            return relative_paths
+        
+        rgb_paths = get_relative_paths(self.rgb_dataset)
+        landrmark_paths = get_relative_paths(self.landrmark_dataset, is_landrmark=True)
+        
+        print("RGB 路径样例:", rgb_paths[:5])
+        print("Landmarks 路径样例:", landrmark_paths[:5])
+        
+        common_paths = set(rgb_paths) & set(landrmark_paths)
+        print("公共路径数量:", len(common_paths))
+        print("公共路径样例:", list(common_paths)[:5])
+
+        if len(common_paths) == 0:
+            raise ValueError("RGB 和 Landmarks 数据集没有匹配的文件，请检查路径或文件命名规则。")
+
+        def filter_dataset(dataset, common_paths, is_landrmark=False):
+            new_samples = []
+            for path, label in dataset.samples:
+                rel_path = os.path.relpath(path, dataset.root)
+                if is_landrmark:
+                    dir_name, file_name = os.path.split(rel_path)
+                    base_name = file_name.replace('_landmarks', '')
+                    rel_path_processed = os.path.join(dir_name, base_name)
+                    rel_path_processed = os.path.splitext(rel_path_processed)[0]  # 去掉扩展名
+                else:
+                    rel_path_processed = os.path.splitext(rel_path)[0]  # 去掉扩展名
+                if rel_path_processed in common_paths:
+                    new_samples.append((path, label))
+            dataset.samples = new_samples
+            dataset.targets = [s[1] for s in new_samples]
+        
+        filter_dataset(self.rgb_dataset, common_paths)
+        filter_dataset(self.landrmark_dataset, common_paths, is_landrmark=True)
+        
+        self.dataset_length = len(self.rgb_dataset)
+        print("同步后 RGB 数据集长度:", len(self.rgb_dataset))
+        print("同步后 Landmarks 数据集长度:", len(self.landrmark_dataset))
+
+    def __len__(self):
+        return self.dataset_length
+
+    def __getitem__(self, idx):
+        rgb_path, label = self.rgb_dataset.samples[idx]
+        landmarks_path, label_l = self.landrmark_dataset.samples[idx]
+        assert label == label_l, "RGB和Landmarks的标签不一致"
+        
+        # 加载原始图像
+        rgb_image_pil = Image.open(rgb_path).convert('RGB')
+        landmarks_image_pil = Image.open(landmarks_path).convert('RGB') 
+
+        # 转为numpy用于Albumentations
+        rgb_np = np.array(rgb_image_pil)
+        landmarks_np = np.array(landmarks_image_pil)
+
+        # 对同一对图像应用四种不同增强
+        rgb_augs = []
+        landmarks_augs = []
+        for aug in self.aug_list:
+            out = aug(image=rgb_np, image2=landmarks_np)
+            rgb_augs.append(out['image'])
+            landmarks_augs.append(out['image2'])
+
+        # 将四个增强后的图像拼接成2x2马赛克
+        rgb_mosaic = make_mosaic(rgb_augs)
+        landmarks_mosaic = make_mosaic(landmarks_augs)
+
+        # 缩放回224x224
+        rgb_mosaic = cv2.resize(rgb_mosaic, (224,224), interpolation=cv2.INTER_LINEAR)
+        landmarks_mosaic = cv2.resize(landmarks_mosaic, (224,224), interpolation=cv2.INTER_LINEAR)
+
+        # 转为Tensor
+        rgb_mosaic_tensor = transforms.ToTensor()(Image.fromarray(rgb_mosaic))
+        landmarks_mosaic_tensor = transforms.ToTensor()(Image.fromarray(landmarks_mosaic))
+
+        # 基本版本（无增强）的图像
+        rgb_basic = get_basic_transform()(rgb_image_pil)
+        landmarks_basic = get_basic_transform()(landmarks_image_pil)
+
+        return rgb_basic, rgb_mosaic_tensor, landmarks_basic, landmarks_mosaic_tensor, label
 
 # --- Loss Functions ---
 def contrastive_loss(features1, features2):
