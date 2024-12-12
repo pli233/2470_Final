@@ -143,24 +143,9 @@ class ProjectionHead(nn.Module):
     def forward(self, x):
         return self.layers(x)
     
-class Post_projectionHead(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super(Post_projectionHead, self).__init__()
-        self.fc1 = nn.Linear(input_dim, input_dim)
-        self.bn1 = nn.BatchNorm1d(input_dim)
-        self.fc2 = nn.Linear(input_dim, output_dim)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.fc2(x)
-        return x
-
 
 # --- Dataset Definitions ---
-class MultiModalDataset_Train(Dataset):
+class MultiModalDataset_Gray_Train(Dataset):
 
     def __init__(self, rgb_root):
         """Initialize dataset with multiple augmentations."""
@@ -194,7 +179,7 @@ class MultiModalDataset_Train(Dataset):
 
         return rgb_basic, rgb_mosaic_tensor, gray_basic, gray_mosaic_tensor, label
     
-class MultiModalDataset_Test(Dataset):
+class MultiModalDataset_Gray_Test(Dataset):
     def __init__(self, rgb_root):
         # 使用单个数据集目录
         self.rgb_dataset = datasets.ImageFolder(root=rgb_root)
