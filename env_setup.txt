@@ -1,0 +1,7 @@
+conda create -n simclip
+conda activate simclip
+conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
+conda install opencv=4.10.0 -c conda-forge     
+pip install mediapipe==0.10.18
+pip install tqdm
+pip install albumentations==1.3.0

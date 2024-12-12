@@ -1,127 +1,128 @@
 # **SimCLIP Training and Fine-Tuning Framework**
 
-This README provides step-by-step instructions for pretraining and fine-tuning SimCLIP models. It includes details on the configuration file, commands to run pretraining and fine-tuning, parameter adjustments, and troubleshooting tips.
-
+This is our realization of pretraining and fine-tuning SimCLIP models. The overview of simclip is like below:
+![alt text](<simclip method.png>)
 ---
 
 ## **Table of Contents**
 1. [Prerequisites](#prerequisites)
 2. [Project Structure](#project-structure)
 3. [Configuration File](#configuration-file)
-4. [Pretraining](#pretraining)
-5. [Fine-Tuning](#fine-tuning)
-6. [Parameter Adjustments](#parameter-adjustments)
-7. [Notes and Troubleshooting](#notes-and-troubleshooting)
+4. [Generating Landmarks](#generating-landmarks)
+5. [Pretraining](#pretraining)
+6. [Fine-Tuning](#fine-tuning)
+
 
 ---
 
 ## **Prerequisites**
-Before using this framework, ensure the following:
-- Python 3.8 or later
-- GPU with CUDA 11.0 or later
-- Required Python libraries installed:
-```bash
-  pip install -r requirements.txt
-```
- 
+Before using this framework, use the command in env_setup.txt to get ready for env
+
+
 - Dataset prepared in the specified format: 
   - Training Dataset: Located at `./affectnet/train`
- 
   - Testing Dataset: Located at `./affectnet/test`
-
 ---
 
 ## **Project Structure** 
 The directory structure for the project should look like this:
 
-
 ```bash
-├── config.yml                     # Configuration file
-├── pretrain.py                    # Script for pretraining
-├── finetune.py                    # Script for fine-tuning
-├── test.py                        # Script for testing and evaluation
+├── config.yml                     # Project Configuration
+├── simclip_gray_pretrain.py       # Script for gray-scale pretraining
+├── simclip_gray_finetune.py       # Script for gray-scale fine-tuning
+├── simclip_generate_landmark.py   # Script to generate landmarks
+├── simclip_landmark_pretrain.py   # Script for landmark-based pretraining
+├── simclip_landmark_finetune.py   # Script for landmark-based fine-tuning
 ├── simclip_models.py              # Core model definitions
 ├── simclip_utils.py               # Utility functions
-├── requirements.txt               # Required Python libraries
+├── env_setup.txt                  # Command to setup environment
 ├── saved_models/                  # Directory for saving model checkpoints
-│   ├── simclip_rn18/              # Experiment name
-│       ├── pretrain/              # Pretraining checkpoints
-│       ├── finetune/              # Fine-tuning checkpoints
+│   ├── simclip_rn18_gray/         # Gray-scale experiment directory
+│   ├── simclip_rn18_landmark/     # Landmark-based experiment directory
 ```
-
 
 ---
 
-## **Configuration File** The `config.yml` file contains all the parameters for training, fine-tuning, and testing. Below is an example configuration:
+## **Configuration File**
+The `config.yml` file contains all the parameters for training, fine-tuning, and testing. Below is an example configuration:
 
 ```yaml
 # Dataset and Dataloader configuration
 save_dir: './saved_models'         # Directory to save the models
-exp_name: simclip_rn18             # Experiment name
-train_dataset_path: './affectnet_3750subset/train'  # Path to train dataset
-test_dataset_path: './affectnet_3750subset/test'    # Path to test dataset
+exp_name: simclip_rn18_gray        # Experiment name for gray-scale
+train_dataset_path: './affectnet/train'  # Path to train dataset
+test_dataset_path: './affectnet/test'    # Path to test dataset
+train_landmarks_dataset_path: './affectnet_landmark/train'  # Path to train landmark dataset
+test_landmarks_dataset_path: './affectnet_landmark/test'    # Path to test landmark dataset
 
 # Pretrain configuration
-pretrain_batch_size: 64            # Batch size for pretraining
-pretrain_num_workers: 4            # Number of workers for DataLoader
+pretrain_batch_size: 32            # Batch size for pretraining
+pretrain_num_workers: 8            # Number of workers for DataLoader
 pretrain_epochs: 30                # Total pretraining epochs
-pretrain_learning_rate: 0.001      # Learning rate for optimizer
+pretrain_learning_rate: 0.003      # Learning rate for optimizer
 
 # Fine-tune configuration
-finetune_batch_size: 64            # Batch size for fine-tuning
-finetune_num_workers: 4            # Number of workers for DataLoader
+finetune_batch_size: 32            # Batch size for fine-tuning
+finetune_num_workers: 8            # Number of workers for DataLoader
 finetune_epochs: 30                # Total fine-tuning epochs
-finetune_learning_rate: 0.001      # Learning rate for optimizer
+finetune_learning_rate: 0.003      # Learning rate for optimizer
 
 # Test configuration
 test_batch_size: 64                # Batch size for testing
-test_num_workers: 4                # Number of workers for DataLoader
+test_num_workers: 8                # Number of workers for DataLoader
 ```
-
 
 ---
 
-**Pretraining** 
-To train the SimCLIP model with contrastive learning, run the following command:
-
-
+## **Generating Landmarks**
+Before performing landmark-based pretraining, generate the landmark files using the following command:
 ```bash
-python simclip_pretrain.py --config ./config.yml
+python simclip_generate_landmark.py
 ```
-**Outputs** Checkpoints will be saved in `./saved_models/<exp_name>/pretrain/`: 
-- `best_model.pth`: Model with the lowest validation loss
- 
-- `latest_model.pth`: Most recent checkpoint
+This script will process the images in `train_dataset_path` and save the landmarks to `train_landmarks_dataset_path`. Similarly, it will process the test dataset for landmarks.
 
+**Outputs**:
+- Generated landmark images will be saved in the `train_landmarks_dataset_path` and `test_landmarks_dataset_path` directories.
 
 ---
 
-**Fine-Tuning** 
-To fine-tune the pretrained SimCLIP model for classification tasks, run:
-
-
+## **Pretraining**
+### **Gray-Scale Pretraining**
+To train the SimCLIP model with gray-scale images, run the following command:
 ```bash
-python simclip_finetune.py --config ./config.yml
+python simclip_gray_pretrain.py
 ```
-**Outputs** Checkpoints will be saved in `./saved_models/<exp_name>/finetune/`: 
-- `best_model.pth`: Model with the highest classification accuracy
- 
-- `latest_model.pth`: Most recent checkpoint
 
+### **Landmark-Based Pretraining**
+To train the SimCLIP model with landmarks, run the following command:
+```bash
+python simclip_landmark_pretrain.py
+```
 
----
-
-**Outputs** 
-Evaluation metrics and predictions will be logged in the terminal or saved in the specified directory.
-
----
-
-**Parameter Adjustments** Modify the `config.yml` file to adjust training parameters. Common adjustments include: 
-- **Batch Size:**  `pretrain_batch_size`, `finetune_batch_size`, `test_batch_size`
- 
-- **Learning Rate:**  `pretrain_learning_rate`, `finetune_learning_rate`
- 
-- **Epochs:**  `pretrain_epochs`, `finetune_epochs`
+**Outputs**:
+- Checkpoints will be saved in `./saved_models/<exp_name>/pretrain/`:
+  - `best_model.pth`: Model with the lowest validation loss.
+  - `latest_model.pth`: Most recent checkpoint.
 
 ---
 
+## **Fine-Tuning**
+### **Gray-Scale Fine-Tuning**
+To fine-tune the pretrained gray-scale SimCLIP model for classification tasks, run:
+```bash
+python simclip_gray_finetune.py
+```
+
+### **Landmark-Based Fine-Tuning**
+To fine-tune the pretrained landmark-based SimCLIP model for classification tasks, run:
+```bash
+python simclip_landmark_finetune.py
+```
+
+**Outputs**:
+- Checkpoints will be saved in `./saved_models/<exp_name>/finetune/`:
+  - `best_model.pth`: Model with the highest classification accuracy.
+  - `latest_model.pth`: Most recent checkpoint.
+
+---

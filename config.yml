@@ -1,8 +1,8 @@
 # Dataset and Dataloader configuration
 save_dir: './saved_models'  # Directory to save the models
-exp_name: simclip_rn18_landmark
-train_dataset_path: './affectnet_3750subset/train'  # Path to the dataset
-test_dataset_path: './affectnet_3750subset/test'
+exp_name: simclip_rn18_gray
+train_dataset_path: './affectnet/train'  # Path to the dataset
+test_dataset_path: './affectnet/test'
 train_landmarks_dataset_path: './affectnet_landmark/train'
 test_landmarks_dataset_path: './affectnet_landmark/test'
 
